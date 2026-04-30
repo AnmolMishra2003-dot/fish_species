@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AquaID — Fish Species Identification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ═══ BACKGROUND CANVAS ═══ -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-logo">
+    <span class="logo-icon">🐟</span>
+    <span class="logo-text">Aqua<strong>ID</strong></span>
+  </div>
+  <div class="nav-links">
+    <a href="#identify">Identify</a>
+    <a href="#about">About</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero" id="hero">
+  <div class="hero-tag">AI · Marine Science · India</div>
+  <h1 class="hero-title">
+    Identify Any<br/>
+    <em>Fish Species</em><br/>
+    Instantly
+  </h1>
+  <p class="hero-sub">
+    Powered by MobileNetV2 deep learning. Capture or upload a photo,
+    and our AI identifies the species with GPS geotagging &amp; live weather data.
+  </p>
+  <a href="#identify" class="hero-cta">Start Identifying ↓</a>
+
+  <!-- floating fish decorations -->
+  <div class="fish-float f1">🐠</div>
+  <div class="fish-float f2">🐡</div>
+  <div class="fish-float f3">🦈</div>
+  <div class="fish-float f4">🐙</div>
+</header>
+
+<!-- ═══ MAIN IDENTIFIER SECTION ═══ -->
+<main id="identify" class="container">
+
+  <!-- ── Upload / Camera Card ── -->
+  <section class="card upload-card">
+    <div class="card-label">STEP 01</div>
+    <h2 class="card-title">Add Your Photo</h2>
+
+    <div class="upload-zone" id="drop-zone">
+      <div class="upload-inner" id="upload-inner">
+        <div class="upload-icon">📷</div>
+        <p class="upload-hint">Drag &amp; drop an image here</p>
+        <p class="upload-or">— or —</p>
+        <div class="upload-buttons">
+          <label class="btn btn-primary" for="file-input">
+            📁 Choose File
+          </label>
+          <button class="btn btn-outline" id="camera-btn">
+            📸 Use Camera
+          </button>
+        </div>
+        <input type="file" id="file-input" accept="image/*" hidden />
+      </div>
+
+      <!-- preview state -->
+      <div class="preview-state hidden" id="preview-state">
+        <img id="preview-img" src="" alt="Preview" />
+        <button class="remove-btn" id="remove-btn">✕ Remove</button>
+      </div>
+    </div>
+
+    <!-- Camera stream (hidden by default) -->
+    <div class="camera-container hidden" id="camera-container">
+      <video id="camera-feed" autoplay playsinline></video>
+      <div class="camera-controls">
+        <button class="btn btn-primary" id="snap-btn">📸 Capture</button>
+        <button class="btn btn-outline" id="close-camera-btn">✕ Close</button>
+      </div>
+      <canvas id="snap-canvas" hidden></canvas>
+    </div>
+  </section>
+
+  <!-- ── Location Card ── -->
+  <section class="card location-card">
+    <div class="card-label">STEP 02</div>
+    <h2 class="card-title">Location Data</h2>
+
+    <div class="location-status" id="location-status">
+      <div class="loc-icon">📍</div>
+      <div class="loc-info">
+        <p class="loc-title">Location not detected</p>
+        <p class="loc-sub">Enable location to geo-tag your catch & get weather</p>
+      </div>
+    </div>
+
+    <button class="btn btn-outline loc-btn" id="get-location-btn">
+      🌐 Detect My Location
+    </button>
+
+    <div class="loc-details hidden" id="loc-details">
+      <div class="loc-coord">
+        <span class="coord-label">Latitude</span>
+        <span class="coord-val" id="lat-display">—</span>
+      </div>
+      <div class="loc-coord">
+        <span class="coord-label">Longitude</span>
+        <span class="coord-val" id="lon-display">—</span>
+      </div>
+      <div class="loc-coord">
+        <span class="coord-label">Place</span>
+        <span class="coord-val" id="place-display">—</span>
+      </div>
+    </div>
+
+    <!-- hidden inputs for submission -->
+    <input type="hidden" id="lat-input" />
+    <input type="hidden" id="lon-input" />
+  </section>
+
+  <!-- ── Identify Button ── -->
+  <div class="identify-row">
+    <button class="btn btn-identify" id="identify-btn" disabled>
+      <span id="identify-label">🔍 Identify Fish</span>
+      <div class="spinner hidden" id="spinner"></div>
+    </button>
+    <p class="identify-note">Upload a photo first to enable identification</p>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <section class="results-section hidden" id="results-section">
+
+    <div class="results-header">
+      <div class="results-tag">IDENTIFICATION RESULT</div>
+      <h2 class="results-title" id="result-species">—</h2>
+      <div class="confidence-bar-wrap">
+        <div class="confidence-bar" id="conf-bar"></div>
+        <span class="confidence-pct" id="conf-pct">0%</span>
+      </div>
+    </div>
+
+    <div class="results-grid">
+
+      <!-- Species info -->
+      <div class="result-card">
+        <div class="rc-icon">🐟</div>
+        <div class="rc-label">Species Details</div>
+        <table class="info-table" id="info-table">
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Top predictions -->
+      <div class="result-card">
+        <div class="rc-icon">📊</div>
+        <div class="rc-label">Top Predictions</div>
+        <div class="top-preds" id="top-preds"></div>
+      </div>
+
+      <!-- Location & Weather -->
+      <div class="result-card" id="weather-card">
+        <div class="rc-icon">🌊</div>
+        <div class="rc-label">Catch Location &amp; Weather</div>
+        <div id="weather-content">
+          <p class="no-loc-msg">Enable location for weather data</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Map embed -->
+    <div class="map-wrap hidden" id="map-wrap">
+      <div class="map-label">📌 Catch Location</div>
+      <iframe id="map-frame" src="" frameborder="0"
+        allowfullscreen loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+
+    <!-- New scan button -->
+    <button class="btn btn-outline reset-btn" id="reset-btn">
+      ↺ Scan Another Fish
+    </button>
+
+  </section>
+
+</main>
+
+<!-- ═══ ABOUT ═══ -->
+<section id="about" class="about-section container">
+  <h2 class="section-title">About AquaID</h2>
+  <p>
+    AquaID is built as part of a B.Tech Computer Science project at
+    Babu Banarasi Das Institute of Technology &amp; Management, Lucknow.
+    It addresses the critical need for accurate, species-level catch
+    reporting in India's fisheries sector, empowering fishermen with
+    AI-powered identification, GPS geotagging, and real-time weather data.
+  </p>
+  <div class="tech-badges">
+    <span class="badge">MobileNetV2</span>
+    <span class="badge">TensorFlow</span>
+    <span class="badge">Flask</span>
+    <span class="badge">GPS Geotagging</span>
+    <span class="badge">Open-Meteo API</span>
+    <span class="badge">INCOIS Compatible</span>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+  <p>© 2025 AquaID · Fish Species Identification System · BBDITM Lucknow</p>
+  <p>Ahan Raj · Ankit Singh · Anmol Mishra &nbsp;|&nbsp; Supervisor: Mr. Deepak Pant</p>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
